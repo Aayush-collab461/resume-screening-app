@@ -182,18 +182,40 @@ def predict_with_top3(raw_text):
 
 def resume_score(cleaned_text, category):
     text_lower = cleaned_text.lower()
-    tips = RESUME_TIPS.get(category, RESUME_TIPS['default'])
+    tips   = RESUME_TIPS.get(category, RESUME_TIPS['default'])
     kw_list = CATEGORY_KEYWORDS.get(category, [])
-    hits = sum(1 for k in kw_list if k in text_lower)
-    kw_score = min(hits / max(len(kw_list), 1), 1.0) * 40
-    words = len(cleaned_text.split())
-    length_score = 30 if 300 <= words <= 800 else (20 if words > 200 else 10)
-    sec_kw = ['experience', 'education', 'skills', 'projects', 'certifications', 'summary', 'objective']
+    hits    = sum(1 for k in kw_list if k in text_lower)
+    kw_score = min(hits / max(len(kw_list),1), 1.0) * 40
+    words   = len(cleaned_text.split())
+    length_score = 30 if 300<=words<=800 else (20 if words>200 else 10)
+    sec_kw  = ['experience','education','skills','projects','certifications','summary','objective']
     sec_hits = sum(1 for s in sec_kw if s in text_lower)
-    section_score = min(sec_hits / 5, 1.0) * 30
-    total = int(kw_score + length_score + section_score)
+    section_score = min(sec_hits/5, 1.0)*30
+    total   = int(kw_score + length_score + section_score)
     missing = [k for k in kw_list if k not in text_lower][:5]
-    return total, missing, tips['sections']
+
+    # Smart filter — only suggest sections not already in resume
+    filtered_tips = []
+    for tip in tips['sections'][:4]:
+        tip_lower = tip.lower()
+        if 'github' in tip_lower and 'github' in text_lower:
+            continue
+        if 'skill' in tip_lower and 'skill' in text_lower:
+            continue
+        if 'project' in tip_lower and 'project' in text_lower:
+            continue
+        if 'certification' in tip_lower and 'certif' in text_lower:
+            continue
+        if 'open source' in tip_lower and 'open source' in text_lower:
+            continue
+        if 'portfolio' in tip_lower and 'portfolio' in text_lower:
+            continue
+        if 'award' in tip_lower and 'award' in text_lower:
+            continue
+        filtered_tips.append(tip)
+
+    final_tips = filtered_tips if filtered_tips else ["Resume looks well structured!"]
+    return total, missing, final_tips
 
 
 def jd_match(resume_text, jd_text):
